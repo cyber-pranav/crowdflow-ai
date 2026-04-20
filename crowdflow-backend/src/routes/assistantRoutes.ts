@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { aiAssistant } from '../services/aiAssistant';
+import { sanitizeChatMessage, isValidZoneId } from '../utils/validators';
 
 export const assistantRoutes = Router();
 
@@ -7,16 +8,19 @@ export const assistantRoutes = Router();
 assistantRoutes.post('/chat', async (req: Request, res: Response) => {
   const { message, userZoneId } = req.body;
 
-  if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Missing required field: message' });
+  // Validate and sanitize message
+  const validation = sanitizeChatMessage(message);
+  if (!validation.valid) {
+    return res.status(400).json({ error: validation.error });
   }
 
-  if (message.length > 500) {
-    return res.status(400).json({ error: 'Message too long (max 500 chars)' });
+  // Validate optional userZoneId
+  if (userZoneId && !isValidZoneId(userZoneId)) {
+    return res.status(400).json({ error: `Invalid zone: '${userZoneId}'` });
   }
 
   try {
-    const response = await aiAssistant.processQuery(message, userZoneId);
+    const response = await aiAssistant.processQuery(validation.sanitized, userZoneId);
     res.json(response);
   } catch (error) {
     console.error('Assistant error:', error);

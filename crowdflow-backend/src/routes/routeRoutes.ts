@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { smartRouter } from '../services/smartRouter';
+import { isValidZoneId } from '../utils/validators';
 
 export const routeRoutes = Router();
 
@@ -11,7 +12,15 @@ routeRoutes.get('/find', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing required params: from, to' });
   }
 
-  const result = smartRouter.findRoutes(from as string, to as string);
+  if (!isValidZoneId(from)) {
+    return res.status(400).json({ error: `Invalid zone: '${from}'. Use /api/crowd/stadium for valid zone IDs.` });
+  }
+
+  if (!isValidZoneId(to)) {
+    return res.status(400).json({ error: `Invalid zone: '${to}'. Use /api/crowd/stadium for valid zone IDs.` });
+  }
+
+  const result = smartRouter.findRoutes(from, to);
 
   if (result.routes.length === 0) {
     return res.status(404).json({ error: 'No route found between the specified zones' });
@@ -28,6 +37,10 @@ routeRoutes.get('/emergency', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing required param: from' });
   }
 
-  const result = smartRouter.findEmergencyRoute(from as string);
+  if (!isValidZoneId(from)) {
+    return res.status(400).json({ error: `Invalid zone: '${from}'. Use /api/crowd/stadium for valid zone IDs.` });
+  }
+
+  const result = smartRouter.findEmergencyRoute(from);
   res.json(result);
 });

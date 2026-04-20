@@ -35,21 +35,51 @@ export interface RoutingResult {
   timestamp: number;
 }
 
-// Priority queue for A*
+// Binary min-heap priority queue — O(log n) enqueue/dequeue
 class PriorityQueue<T> {
-  private items: { element: T; priority: number }[] = [];
+  private heap: { element: T; priority: number }[] = [];
 
   enqueue(element: T, priority: number): void {
-    this.items.push({ element, priority });
-    this.items.sort((a, b) => a.priority - b.priority);
+    this.heap.push({ element, priority });
+    this.bubbleUp(this.heap.length - 1);
   }
 
   dequeue(): T | undefined {
-    return this.items.shift()?.element;
+    if (this.heap.length === 0) return undefined;
+    const top = this.heap[0];
+    const last = this.heap.pop()!;
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.sinkDown(0);
+    }
+    return top.element;
   }
 
   isEmpty(): boolean {
-    return this.items.length === 0;
+    return this.heap.length === 0;
+  }
+
+  private bubbleUp(i: number): void {
+    while (i > 0) {
+      const parent = Math.floor((i - 1) / 2);
+      if (this.heap[parent].priority <= this.heap[i].priority) break;
+      [this.heap[parent], this.heap[i]] = [this.heap[i], this.heap[parent]];
+      i = parent;
+    }
+  }
+
+  private sinkDown(i: number): void {
+    const n = this.heap.length;
+    while (true) {
+      let smallest = i;
+      const left = 2 * i + 1;
+      const right = 2 * i + 2;
+      if (left < n && this.heap[left].priority < this.heap[smallest].priority) smallest = left;
+      if (right < n && this.heap[right].priority < this.heap[smallest].priority) smallest = right;
+      if (smallest === i) break;
+      [this.heap[smallest], this.heap[i]] = [this.heap[i], this.heap[smallest]];
+      i = smallest;
+    }
   }
 }
 

@@ -1,12 +1,21 @@
 import { Router, Request, Response } from 'express';
 import { simulationService } from '../services/simulationService';
 import { predictiveEngine } from '../services/predictiveEngine';
+import { isValidUserCount, isValidTickInterval, isValidSimulationEvent } from '../utils/validators';
 
 export const simulationRoutes = Router();
 
 // POST /api/simulation/start — Start crowd simulation
 simulationRoutes.post('/start', (req: Request, res: Response) => {
   const { userCount = 500, tickInterval = 2000 } = req.body;
+
+  if (!isValidUserCount(userCount)) {
+    return res.status(400).json({ error: 'userCount must be between 1 and 5000' });
+  }
+
+  if (!isValidTickInterval(tickInterval)) {
+    return res.status(400).json({ error: 'tickInterval must be between 500ms and 10000ms' });
+  }
 
   if (simulationService.running) {
     return res.status(400).json({ error: 'Simulation already running' });
@@ -24,11 +33,12 @@ simulationRoutes.post('/stop', (_req: Request, res: Response) => {
 
 // POST /api/simulation/trigger/:event — Trigger special events
 simulationRoutes.post('/trigger/:event', (req: Request, res: Response) => {
-  const event = req.params.event as 'halftime' | 'endgame' | 'emergency' | 'reset';
-  const validEvents = ['halftime', 'endgame', 'emergency', 'reset'];
+  const { event } = req.params;
 
-  if (!validEvents.includes(event)) {
-    return res.status(400).json({ error: `Invalid event. Valid: ${validEvents.join(', ')}` });
+  if (!isValidSimulationEvent(event)) {
+    return res.status(400).json({
+      error: `Invalid event. Valid events: halftime, endgame, emergency, reset`,
+    });
   }
 
   simulationService.triggerEvent(event);
