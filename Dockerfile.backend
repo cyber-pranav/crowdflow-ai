@@ -1,0 +1,25 @@
+# Backend Dockerfile
+FROM node:20-slim
+
+WORKDIR /app
+
+# Copy package files
+COPY crowdflow-backend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm install typescript ts-node
+
+# Copy source
+COPY crowdflow-backend/ .
+
+# Build TypeScript
+RUN npx tsc || true
+
+# Expose port (Cloud Run uses PORT env var)
+EXPOSE 8080
+
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Start server
+CMD ["node", "dist/server.js"]

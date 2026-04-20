@@ -1,0 +1,35 @@
+# Frontend Dockerfile
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY crowdflow-frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source
+COPY crowdflow-frontend/ .
+
+# Set backend URL for build (will be overridden at runtime)
+ENV NEXT_PUBLIC_API_URL=https://crowdflow-backend-REPLACE.a.run.app
+ENV NEXT_PUBLIC_SOCKET_URL=https://crowdflow-backend-REPLACE.a.run.app
+
+# Build
+RUN npm run build
+
+# Production runner
+FROM node:20-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=8080
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 8080
+
+CMD ["node", "server.js"]
